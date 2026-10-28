@@ -19,7 +19,7 @@ Display rain forecast using Buienalarm and/or Buienradar sensor data. The Neersl
 Apart from the built-in Buienalarm and Buienradar sensors, this app also supports data from the **NL Weather** integration. This is ideal if you prefer official KNMI real-time data.
 
 ### How to use NL Weather:
-1. **Install NL Weather**: Install the [NL Weather integration](https://github.com/danimaisonnave/ha-nl-weather) via HACS.
+1. **Install NL Weather**: Install the [NL Weather integration](https://github.com/PaulVanSchayck/ha-nl-weather) via HACS.
 2. **Get API Key**: You will need a free API key from KNMI (request this via email as described in the NL Weather documentation).
 3. **Configure**: Once the integration is running and you have a precipitation forecast entity (e.g., `binary_sensor.weer_yourlocation_precipitation_forecasted`), simply add this entity to the Neerslag Card in your dashboard.
 
