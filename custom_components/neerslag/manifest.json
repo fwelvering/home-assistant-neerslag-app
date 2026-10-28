@@ -10,7 +10,7 @@
   "dependencies": [],
   "issue_tracker": "https://github.com/fwelvering/home-assistant-neerslag-app/issues",
   "codeowners": [
-    "@aex351"
+    "@fwelvering"
   ],
   "iot_class" : "cloud_polling",
   "version": "2026.10.28.1"
