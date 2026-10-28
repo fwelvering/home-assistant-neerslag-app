@@ -611,10 +611,14 @@ class CombiCard extends LitElement {
 		// https://www.home-assistant.io/lovelace/entities/
 		// waardoor je zelf de naam kan opgeven
 
-		if (vlabel.includes("arm")) {
+		// optional card config: names: { "sensor.xyz": "My name" }
+		const customName = this._config && this._config.names && this._config.names[vlabel];
+		const sourceName = this._sourceLabels && this._sourceLabels[vlabel];
+		if (customName || sourceName) {
+			vlabel = customName || sourceName;
+		} else if (vlabel.includes("arm")) {
 			vlabel = "Buienalarm";
-		}
-		if (vlabel.includes("dar")) {
+		} else if (vlabel.includes("dar")) {
 			vlabel = "Buienradar";
 		}
 
@@ -764,22 +768,22 @@ class CombiCard extends LitElement {
 		try {
 			// buienradar: text blob "000|00:00 000|00:05 ..."
 			if (typeof data === 'string') {
-				return data.includes('|') ? this.formatBuienradarData(data) : [];
+				return data.includes('|') ? this.labelSource(entity, 'Buienradar', this.formatBuienradarData(data)) : [];
 			}
 
 			// buienalarm (app sensor): {success, start, delta, precip: [...]}
 			if (!Array.isArray(data) && Array.isArray(data.precip)) {
-				return this.formatBuienalarmDataAndere(data);
+				return this.labelSource(entity, 'Buienalarm', this.formatBuienalarmDataAndere(data));
 			}
 
 			if (Array.isArray(data) && data[0]) {
 				// buienalarm (old splash api): [{date, rain}, ...]
 				if (typeof data[0].rain !== 'undefined') {
-					return this.formatBuienalarmData(data);
+					return this.labelSource(entity, 'Buienalarm', this.formatBuienalarmData(data));
 				}
 				// NL Weather / KNMI: [{datetime, precipitation}, ...]
 				if (data[0].datetime && typeof data[0].precipitation !== 'undefined') {
-					return this.formatNLWeatherData(data);
+					return this.labelSource(entity, 'KNMI', this.formatNLWeatherData(data));
 				}
 			}
 		} catch (e) {
@@ -787,6 +791,15 @@ class CombiCard extends LitElement {
 		}
 
 		return [];
+	}
+
+	/**
+	 * Remember a readable name for the entity, based on the detected data format.
+	 */
+	labelSource(entity, label, result) {
+		this._sourceLabels = this._sourceLabels || {};
+		this._sourceLabels[entity] = label;
+		return result;
 	}
 
 	/**
@@ -965,7 +978,7 @@ window.customCards.push({
 });
 
 console.info(
-	`%c NEERSLAG-CARD %c 2026.10.28.1`,
+	`%c NEERSLAG-CARD %c 2026.10.28.3`,
 	"Color: white; font-weight: bold; background: red;",
 	""
 );
