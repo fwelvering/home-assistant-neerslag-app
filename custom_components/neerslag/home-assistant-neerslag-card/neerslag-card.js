@@ -411,10 +411,10 @@ class CombiCard extends LitElement {
 	}
 }
 
-customElements.define('neerslag-card', CombiCard);
+customElements.define('neerslag-app-card', CombiCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
-	type: "neerslag-card",
+	type: "neerslag-app-card",
 	name: "Neerslag Card",
 	preview: true,
 	description: "Display rain forecast using BuienAlarm and/or BuienRadar data."
