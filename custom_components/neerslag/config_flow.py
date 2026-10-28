@@ -63,8 +63,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
-        if self.hass.data.get(DOMAIN):
-            return self.async_abort(reason="single_instance_allowed")
 
         if user_input is None:
             return self.async_show_form(
