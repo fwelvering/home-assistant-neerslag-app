@@ -728,9 +728,12 @@ class CombiCard extends LitElement {
 	 * (or its attribute) is not available (e.g. after a HA restart).
 	 */
 	getEntityData(hass, entity) {
-		return hass && hass.states && hass.states[entity] && hass.states[entity].attributes
-			? hass.states[entity].attributes.data
-			: undefined;
+		const attributes = hass && hass.states && hass.states[entity] && hass.states[entity].attributes;
+		if (!attributes) {
+			return undefined;
+		}
+		// the app sensors use "data", NL Weather / KNMI binary sensors use "forecast"
+		return attributes.data !== undefined ? attributes.data : attributes.forecast;
 	}
 
 	destroyChart() {
@@ -962,7 +965,7 @@ window.customCards.push({
 });
 
 console.info(
-	`%c NEERSLAG-CARD %c 2026.10.28.0`,
+	`%c NEERSLAG-CARD %c 2026.10.28.1`,
 	"Color: white; font-weight: bold; background: red;",
 	""
 );
