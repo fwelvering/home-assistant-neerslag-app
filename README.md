@@ -23,6 +23,12 @@ Apart from the built-in Buienalarm and Buienradar sensors, this app also support
 2. **Get API Key**: You will need a free API key from KNMI (request this via email as described in the NL Weather documentation).
 3. **Configure**: Once the integration is running and you have a precipitation forecast entity (e.g., `binary_sensor.weer_yourlocation_precipitation_forecasted`), simply add this entity to the Neerslag Card in your dashboard.
 
+## Branches and releases
+- `main` = stable. Every stable release is a GitHub release named `YYYY.MM.DD.N` (for example `2026.10.28.3`).
+- `dev` = work in progress. Test builds are published as GitHub **pre-releases** named `YYYY.MM.DD.N-devM` (for example `2026.10.28.4-dev1`) and always target the `dev` branch.
+- In HACS: open the repository, choose **Redownload** and enable **Show beta versions** to see and install the dev pre-releases. Without that switch you only get stable releases.
+- Workflow: change code on `dev` (card source in `card-src/`, rebuild the bundle, see `card-src/README.md`), publish a pre-release, test it, then merge `dev` into `main` and publish a normal release.
+
 ## Installation overview
 1) Install via HACS or manual;
 2) Configure the Neerslag App (via interface);
