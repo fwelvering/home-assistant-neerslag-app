@@ -335,6 +335,22 @@ class CombiCard extends LitElement {
 		}
 	}
 
+	
+	formatNLWeatherData(data) {
+		if (!Array.isArray(data)) return [];
+		const addZero = (i) => (i < 10 ? '0' + i : i);
+		
+		let rain = [], tijd = [];
+		for (const item of data) {
+			if (item.datetime && typeof item.precipitation !== 'undefined') {
+				let d = new Date(item.datetime);
+				tijd.push(addZero(d.getHours()) + ':' + addZero(d.getMinutes()));
+				rain.push(parseFloat(item.precipitation));
+			}
+		}
+		return [tijd, rain];
+	}
+
 	prepareData(data, entity) {
 		if (!data) return [];
 		try {
@@ -347,6 +363,9 @@ class CombiCard extends LitElement {
 				}
 				if (data[0] && typeof data[0].rain !== 'undefined') {
 					return this.formatBuienalarmData(data);
+				}
+				if (data[0] && data[0].datetime && typeof data[0].precipitation !== 'undefined') {
+					return this.formatNLWeatherData(data);
 				}
 			}
 		} catch (e) {
