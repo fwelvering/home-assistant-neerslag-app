@@ -1,5 +1,7 @@
 {
     "name": "Neerslag App",
+    "content_in_root": false,
     "render_readme": true,
-    "country": ["NL", "BE"]
+    "country": ["NL", "BE"],
+    "filename": "custom_components/neerslag/home-assistant-neerslag-card/neerslag-card.js"
 }
