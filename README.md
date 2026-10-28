@@ -12,7 +12,7 @@ Display rain forecast using Buienalarm and/or Buienradar sensor data. The Neersl
 * Ability to configure this app via the GUI;
 * Can use build-in Home Assistant configured location.
 
-![Example](https://github.com/aex351/home-assistant-neerslag-app/raw/main/documentation/example.png)
+![Example](https://github.com/fwelvering/home-assistant-neerslag-app/raw/main/documentation/example.png)
 
 ## Installation overview
 1) Install via HACS or manual;
