@@ -8,10 +8,11 @@
   "zeroconf": [],
   "homekit": {},
   "dependencies": ["http", "frontend"],
+  "after_dependencies": ["lovelace"],
   "issue_tracker": "https://github.com/fwelvering/home-assistant-neerslag-app/issues",
   "codeowners": [
     "@fwelvering"
   ],
   "iot_class" : "cloud_polling",
-  "version": "2026.10.29.1"
+  "version": "2026.10.29.2-dev1"
 }

@@ -34,6 +34,14 @@ const config = {
         //   ],
     },
     module: {
+        rules: [
+            {
+                // down-level the card and its dependencies (lit, chart.js) so older WebViews/Safari can run it
+                test: /\.js$/,
+                loader: "esbuild-loader",
+                options: { target: "es2017" },
+            },
+        ],
         // rules: [
         //     {
         //         test: /\.(js|jsx)$/i,
