@@ -7,11 +7,11 @@
   "ssdp": [],
   "zeroconf": [],
   "homekit": {},
-  "dependencies": [],
+  "dependencies": ["http", "frontend"],
   "issue_tracker": "https://github.com/fwelvering/home-assistant-neerslag-app/issues",
   "codeowners": [
     "@fwelvering"
   ],
   "iot_class" : "cloud_polling",
-  "version": "2026.10.28.3"
+  "version": "2026.10.28.4-dev3"
 }

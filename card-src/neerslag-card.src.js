@@ -137,7 +137,14 @@ class CombiCard extends LitElement {
 	}
 
 	getCurrentLanguage() {
-		let lang = (localStorage.getItem('selectedLanguage') || '') .replace(/['"]+/g, '').replace('-', '_');
+		let storedLang = '';
+		try {
+			// localStorage can throw (blocked storage in kiosk browsers / iframes)
+			storedLang = localStorage.getItem('selectedLanguage') || '';
+		} catch (e) {
+			storedLang = '';
+		}
+		let lang = storedLang.replace(/['"]+/g, '').replace('-', '_');
 		if(lang == '') {
 			lang = (navigator.language || navigator.userLanguage).replace(/['"]+/g, '').replace('-', ' ').substring(0, 2);
 		}
@@ -967,10 +974,14 @@ class CombiCard extends LitElement {
 }
 
 // customElements.define("combi-card-editor", CombiCardEditor);
-customElements.define('neerslag-card', CombiCard);
+if (!customElements.get('neerslag-card')) {
+	customElements.define('neerslag-card', CombiCard);
+} else {
+	console.warn('neerslag-card is already defined (a second copy of the card is loaded); skipping registration');
+}
 
 window.customCards = window.customCards || [];
-window.customCards.push({
+if (!window.customCards.some(card => card.type === 'neerslag-card')) window.customCards.push({
 	type: "neerslag-card", //name of the card
 	name: "Neerslag Card",
 	preview: true, // Optional - defaults to false
@@ -978,7 +989,7 @@ window.customCards.push({
 });
 
 console.info(
-	`%c NEERSLAG-CARD %c 2026.10.28.3`,
+	`%c NEERSLAG-CARD %c 2026.10.28.4-dev3`,
 	"Color: white; font-weight: bold; background: red;",
 	""
 );
