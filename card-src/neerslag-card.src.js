@@ -17,12 +17,14 @@ const EDITOR_LABELS = {
 		title: 'Titel',
 		entities: 'Entiteiten (sensoren)',
 		autozoom: 'Automatisch inzoomen',
+		axis_labels: 'Labels op de assen tonen',
 		names: 'Namen in de grafiek (optioneel)',
 	},
 	en: {
 		title: 'Title',
 		entities: 'Entities (sensors)',
 		autozoom: 'Automatic zoom',
+		axis_labels: 'Show axis labels',
 		names: 'Names in the graph (optional)',
 	},
 };
@@ -57,6 +59,7 @@ class CombiCardEditor extends LitElement {
 			{ name: 'title', selector: { text: {} } },
 			{ name: 'entities', selector: { entity: { multiple: true, domain: ['sensor', 'binary_sensor'] } } },
 			{ name: 'autozoom', selector: { boolean: {} } },
+			{ name: 'axis_labels', selector: { boolean: {} } },
 		];
 		const entities = this._entities();
 		if (entities.length) {
@@ -76,6 +79,7 @@ class CombiCardEditor extends LitElement {
 			title: config.title || '',
 			entities: this._entities(),
 			autozoom: config.autozoom === true,
+			axis_labels: config.axis_labels !== false,
 		};
 		for (const entity of data.entities) {
 			data['name_' + entity] = (config.names && config.names[entity]) || '';
@@ -91,6 +95,8 @@ class CombiCardEditor extends LitElement {
 
 		if (value.title) config.title = value.title; else delete config.title;
 		if (value.autozoom) config.autozoom = true; else delete config.autozoom;
+		// axis labels are on by default, only store the opt-out
+		if (value.axis_labels === false) config.axis_labels = false; else delete config.axis_labels;
 
 		// a single entity keeps the short "entity:" form of the old configs
 		if (entities.length === 1 && !Array.isArray(this._config.entities)) {
@@ -574,7 +580,7 @@ class CombiCard extends LitElement {
 							ticks:{color: secondaryTextColor,},
 							beginAtZero: true,
 							title: {
-								display: true,
+								display: this._config.axis_labels !== false,
 								text: this.localize('regenMmUur'),
 								color: primaryTextColor,
 							},
@@ -587,7 +593,7 @@ class CombiCard extends LitElement {
 						x: {
 							ticks:{color: secondaryTextColor,},
 							title: {
-								display: true,
+								display: this._config.axis_labels !== false,
 								text: this.localize('regenvalVoorspelling'),
 								color: primaryTextColor,
 							},
@@ -1096,7 +1102,7 @@ if (!window.customCards.some(card => card.type === 'neerslag-card')) window.cust
 });
 
 console.info(
-	`%c NEERSLAG-CARD %c 2026.10.30.1`,
+	`%c NEERSLAG-CARD %c 2026.10.30.2-dev1`,
 	"Color: white; font-weight: bold; background: red;",
 	""
 );

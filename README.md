@@ -92,3 +92,9 @@ Note: By default auto zoom is disabled. Which gives the graph a fixed starting p
 ```yaml
 autozoom: false
 ```
+
+Hide the axis labels ("Rain (mm / hr)" and "Rainfall forecast") to give the graph more room. By default the labels are shown.
+
+```yaml
+axis_labels: false
+```
