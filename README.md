@@ -98,3 +98,12 @@ Hide the axis labels ("Rain (mm / hr)" and "Rainfall forecast") to give the grap
 ```yaml
 axis_labels: false
 ```
+
+
+Every entity after the first gets its own graph color; set your own with `colors` (any CSS color, e.g. `#ff8800`). The first entity keeps the theme color unless you set one.
+
+```yaml
+colors:
+  sensor.neerslag_buienradar_regen_data: "#2196f3"
+  sensor.neerslag_buienalarm_regen_data: "#ff8800"
+```

@@ -19,6 +19,7 @@ const EDITOR_LABELS = {
 		autozoom: 'Automatisch inzoomen',
 		axis_labels: 'Labels op de assen tonen',
 		names: 'Namen in de grafiek (optioneel)',
+		colors: 'Kleuren in de grafiek (optioneel, bijv. #ff8800)',
 	},
 	en: {
 		title: 'Title',
@@ -26,6 +27,7 @@ const EDITOR_LABELS = {
 		autozoom: 'Automatic zoom',
 		axis_labels: 'Show axis labels',
 		names: 'Names in the graph (optional)',
+		colors: 'Colors in the graph (optional, e.g. #ff8800)',
 	},
 };
 
@@ -69,6 +71,12 @@ class CombiCardEditor extends LitElement {
 				title: labels.names,
 				schema: entities.map(entity => ({ name: 'name_' + entity, label: entity, selector: { text: {} } })),
 			});
+			schema.push({
+				type: 'expandable',
+				name: '',
+				title: labels.colors,
+				schema: entities.map(entity => ({ name: 'color_' + entity, label: entity, selector: { text: {} } })),
+			});
 		}
 		return schema;
 	}
@@ -83,6 +91,7 @@ class CombiCardEditor extends LitElement {
 		};
 		for (const entity of data.entities) {
 			data['name_' + entity] = (config.names && config.names[entity]) || '';
+			data['color_' + entity] = (config.colors && config.colors[entity]) || '';
 		}
 		return data;
 	}
@@ -114,6 +123,13 @@ class CombiCardEditor extends LitElement {
 		}
 		if (Object.keys(names).length) config.names = names; else delete config.names;
 
+		const colors = {};
+		for (const entity of entities) {
+			const color = (value['color_' + entity] || '').trim();
+			if (color) colors[entity] = color;
+		}
+		if (Object.keys(colors).length) config.colors = colors; else delete config.colors;
+
 		this._config = config;
 		this.dispatchEvent(new CustomEvent('config-changed', {
 			detail: { config },
@@ -138,6 +154,9 @@ class CombiCardEditor extends LitElement {
 		`;
 	}
 }
+
+// colors for the second, third, ... dataset (the first one uses the theme color)
+const DATASET_COLORS = ['#ff9800', '#4caf50', '#e91e63', '#9c27b0'];
 
 class CombiCard extends LitElement {
 
@@ -723,7 +742,24 @@ class CombiCard extends LitElement {
 	 * @param {*} data = array
 	 * @param {*} vlabel = defineer de label van de dataset (NAAM)
 	 */
-	generateDatasetObject(data, vlabel = "Regen") {
+	/**
+	 * Any CSS color (name, #rgb, rgb()) as #rrggbb, or null when it is not a valid color.
+	 */
+	normalizeColor(color) {
+		if (typeof color !== 'string' || color.trim() === '') {
+			return null;
+		}
+		const context = document.createElement('canvas').getContext('2d');
+		context.fillStyle = '#000000';
+		context.fillStyle = color.trim();
+		const first = context.fillStyle;
+		context.fillStyle = '#ffffff';
+		context.fillStyle = color.trim();
+		// an invalid color leaves the previous fillStyle in place, so both reads differ
+		return first === context.fillStyle && /^#[0-9a-f]{6}$/i.test(first) ? first : null;
+	}
+
+	generateDatasetObject(data, vlabel = "Regen", index = 0, entityId = vlabel) {
 
 		// entities in card moet object worden
 		// dan is het - entity:
@@ -731,7 +767,7 @@ class CombiCard extends LitElement {
 		// waardoor je zelf de naam kan opgeven
 
 		// optional card config: names: { "sensor.xyz": "My name" }
-		const customName = this._config && this._config.names && this._config.names[vlabel];
+		const customName = this._config && this._config.names && this._config.names[entityId];
 		const sourceName = this._sourceLabels && this._sourceLabels[vlabel];
 		if (customName || sourceName) {
 			vlabel = customName || sourceName;
@@ -741,17 +777,21 @@ class CombiCard extends LitElement {
 			vlabel = "Buienradar";
 		}
 
-		return {
+		const dataset = {
 			label: vlabel,
 			data: data,
-			// backgroundColor: [
-			// 	'rgba(89, 160, 238, 0.2)'
-			// ],
-			// borderColor: [
-			// 	'rgba(89, 160, 238, 1)'
-			// ],
-			// borderWidth: 2
+		};
+
+		// optional card config: colors: { "sensor.xyz": "#ff8800" }
+		// without a configured color the first dataset keeps the theme color and
+		// the other datasets get a distinct color, so they can be told apart
+		const customColor = this._config && this._config.colors && this._config.colors[entityId];
+		const color = this.normalizeColor(customColor) || (index > 0 ? DATASET_COLORS[(index - 1) % DATASET_COLORS.length] : null);
+		if (color) {
+			dataset.borderColor = color;
+			dataset.backgroundColor = color + '33';
 		}
+		return dataset;
 	}
 
 	//sync buienradar en buienalarm
@@ -818,7 +858,7 @@ class CombiCard extends LitElement {
 			chartData = this.prepareData(this.getEntityData(this.hass, this._config.entity), this._config.entity);
 			if (chartData.length > 0) {
 				chartsDataAlsArray.push(chartData);
-				chartDatasets.push(this.generateDatasetObject(chartData[1]))
+				chartDatasets.push(this.generateDatasetObject(chartData[1], "Regen", 0, this._config.entity))
 			}
 		} else {
 			for (const entity of this._config.entities) {
@@ -828,7 +868,7 @@ class CombiCard extends LitElement {
 				// the dataset becomes invalid and the graph doesnt load correctly
 				if( chartData.length > 0 ) {
 					chartsDataAlsArray.push(chartData);
-					chartDatasets.push(this.generateDatasetObject(chartData[1], entity))
+					chartDatasets.push(this.generateDatasetObject(chartData[1], entity, chartDatasets.length))
 				}
 			}
 
@@ -1102,7 +1142,7 @@ if (!window.customCards.some(card => card.type === 'neerslag-card')) window.cust
 });
 
 console.info(
-	`%c NEERSLAG-CARD %c 2026.10.30.2`,
+	`%c NEERSLAG-CARD %c 2026.10.31.1-dev1`,
 	"Color: white; font-weight: bold; background: red;",
 	""
 );
