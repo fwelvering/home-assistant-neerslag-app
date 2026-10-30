@@ -12,20 +12,56 @@ Chart.register(...registerables);
 Chart.register(annotationPlugin);
 
 
+// colors for the second, third, ... dataset (the first one uses the theme color)
+const DATASET_COLORS = ['#ff9800', '#4caf50', '#e91e63', '#9c27b0'];
+const DEFAULT_COLOR = '#03a9f4';
+
+/**
+ * Any CSS color (name, #rgb, rgb()) as #rrggbb, or null when it is not a valid color.
+ */
+function normalizeColor(color) {
+	if (typeof color !== 'string' || color.trim() === '') {
+		return null;
+	}
+	const context = document.createElement('canvas').getContext('2d');
+	context.fillStyle = '#000000';
+	context.fillStyle = color.trim();
+	const first = context.fillStyle;
+	context.fillStyle = '#ffffff';
+	context.fillStyle = color.trim();
+	// an invalid color leaves the previous fillStyle in place, so both reads differ
+	return first === context.fillStyle && /^#[0-9a-f]{6}$/i.test(first) ? first : null;
+}
+
+function hexToRgb(hex) {
+	const value = parseInt(hex.slice(1), 16);
+	return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+}
+
+function rgbToHex(rgb) {
+	return '#' + rgb.map(part => Math.max(0, Math.min(255, Math.round(part))).toString(16).padStart(2, '0')).join('');
+}
+
 const EDITOR_LABELS = {
 	nl: {
 		title: 'Titel',
 		entities: 'Entiteiten (sensoren)',
 		autozoom: 'Automatisch inzoomen',
 		axis_labels: 'Labels op de assen tonen',
-		names: 'Namen in de grafiek (optioneel)',
+		name: 'Naam in de grafiek (optioneel)',
+		custom_color: 'Eigen kleur gebruiken',
+		color: 'Kleur',
+		hex: 'Hex-kleurcode (#rrggbb)',
 	},
 	en: {
 		title: 'Title',
 		entities: 'Entities (sensors)',
 		autozoom: 'Automatic zoom',
 		axis_labels: 'Show axis labels',
-		names: 'Names in the graph (optional)',
+		name: 'Name in the graph (optional)',
+		custom_color: 'Use a custom color',
+		color: 'Color',
+		hex: 'Hex color code (#rrggbb)',
 	},
 };
 
@@ -54,21 +90,24 @@ class CombiCardEditor extends LitElement {
 	}
 
 	_schema() {
-		const labels = EDITOR_LABELS[this._lang()];
 		const schema = [
 			{ name: 'title', selector: { text: {} } },
 			{ name: 'entities', selector: { entity: { multiple: true, domain: ['sensor', 'binary_sensor'] } } },
 			{ name: 'autozoom', selector: { boolean: {} } },
 			{ name: 'axis_labels', selector: { boolean: {} } },
 		];
-		const entities = this._entities();
-		if (entities.length) {
-			schema.push({
-				type: 'expandable',
-				name: '',
-				title: labels.names,
-				schema: entities.map(entity => ({ name: 'name_' + entity, label: entity, selector: { text: {} } })),
-			});
+		const config = this._config || {};
+		// one edit area per entity: name and color
+		for (const entity of this._entities()) {
+			const fields = [
+				{ name: 'name_' + entity, label: 'name', selector: { text: {} } },
+				{ name: 'custom_' + entity, label: 'custom_color', selector: { boolean: {} } },
+			];
+			if (config.colors && config.colors[entity]) {
+				fields.push({ name: 'color_' + entity, label: 'color', selector: { color_rgb: {} } });
+				fields.push({ name: 'hex_' + entity, label: 'hex', selector: { text: {} } });
+			}
+			schema.push({ type: 'expandable', name: '', title: entity, schema: fields });
 		}
 		return schema;
 	}
@@ -83,6 +122,12 @@ class CombiCardEditor extends LitElement {
 		};
 		for (const entity of data.entities) {
 			data['name_' + entity] = (config.names && config.names[entity]) || '';
+			const color = normalizeColor(config.colors && config.colors[entity]);
+			data['custom_' + entity] = !!(config.colors && config.colors[entity]);
+			if (data['custom_' + entity]) {
+				data['color_' + entity] = hexToRgb(color || DEFAULT_COLOR);
+				data['hex_' + entity] = color || DEFAULT_COLOR;
+			}
 		}
 		return data;
 	}
@@ -108,11 +153,30 @@ class CombiCardEditor extends LitElement {
 		}
 
 		const names = {};
-		for (const entity of entities) {
+		const colors = {};
+		entities.forEach((entity, index) => {
 			const name = value['name_' + entity];
 			if (name) names[entity] = name;
-		}
+
+			// the color toggle decides: off removes the color, on starts from the
+			// color the graph uses now (or the one picked in the color picker)
+			if (value['custom_' + entity]) {
+				const current = this._config.colors && this._config.colors[entity];
+				const currentHex = normalizeColor(current);
+				const picked = value['color_' + entity];
+				const typed = (value['hex_' + entity] || '').trim();
+				if (/^#[0-9a-f]{6}$/i.test(typed) && typed.toLowerCase() !== currentHex) {
+					// a hex code typed in the text field wins; half-typed codes are ignored
+					colors[entity] = typed.toLowerCase();
+				} else if (Array.isArray(picked) && rgbToHex(picked) !== currentHex) {
+					colors[entity] = rgbToHex(picked);
+				} else {
+					colors[entity] = current || (index > 0 ? DATASET_COLORS[(index - 1) % DATASET_COLORS.length] : DEFAULT_COLOR);
+				}
+			}
+		});
 		if (Object.keys(names).length) config.names = names; else delete config.names;
+		if (Object.keys(colors).length) config.colors = colors; else delete config.colors;
 
 		this._config = config;
 		this.dispatchEvent(new CustomEvent('config-changed', {
@@ -132,7 +196,7 @@ class CombiCardEditor extends LitElement {
 				.hass=${this.hass}
 				.data=${this._data()}
 				.schema=${this._schema()}
-				.computeLabel=${(item) => labels[item.name] || item.label || item.name}
+				.computeLabel=${(item) => labels[item.label] || labels[item.name] || item.label || item.name}
 				@value-changed=${this._valueChanged}
 			></ha-form>
 		`;
@@ -723,7 +787,7 @@ class CombiCard extends LitElement {
 	 * @param {*} data = array
 	 * @param {*} vlabel = defineer de label van de dataset (NAAM)
 	 */
-	generateDatasetObject(data, vlabel = "Regen") {
+	generateDatasetObject(data, vlabel = "Regen", index = 0, entityId = vlabel) {
 
 		// entities in card moet object worden
 		// dan is het - entity:
@@ -731,7 +795,7 @@ class CombiCard extends LitElement {
 		// waardoor je zelf de naam kan opgeven
 
 		// optional card config: names: { "sensor.xyz": "My name" }
-		const customName = this._config && this._config.names && this._config.names[vlabel];
+		const customName = this._config && this._config.names && this._config.names[entityId];
 		const sourceName = this._sourceLabels && this._sourceLabels[vlabel];
 		if (customName || sourceName) {
 			vlabel = customName || sourceName;
@@ -741,17 +805,21 @@ class CombiCard extends LitElement {
 			vlabel = "Buienradar";
 		}
 
-		return {
+		const dataset = {
 			label: vlabel,
 			data: data,
-			// backgroundColor: [
-			// 	'rgba(89, 160, 238, 0.2)'
-			// ],
-			// borderColor: [
-			// 	'rgba(89, 160, 238, 1)'
-			// ],
-			// borderWidth: 2
+		};
+
+		// optional card config: colors: { "sensor.xyz": "#ff8800" }
+		// without a configured color the first dataset keeps the theme color and
+		// the other datasets get a distinct color, so they can be told apart
+		const customColor = this._config && this._config.colors && this._config.colors[entityId];
+		const color = normalizeColor(customColor) || (index > 0 ? DATASET_COLORS[(index - 1) % DATASET_COLORS.length] : null);
+		if (color) {
+			dataset.borderColor = color;
+			dataset.backgroundColor = color + '33';
 		}
+		return dataset;
 	}
 
 	//sync buienradar en buienalarm
@@ -818,7 +886,7 @@ class CombiCard extends LitElement {
 			chartData = this.prepareData(this.getEntityData(this.hass, this._config.entity), this._config.entity);
 			if (chartData.length > 0) {
 				chartsDataAlsArray.push(chartData);
-				chartDatasets.push(this.generateDatasetObject(chartData[1]))
+				chartDatasets.push(this.generateDatasetObject(chartData[1], "Regen", 0, this._config.entity))
 			}
 		} else {
 			for (const entity of this._config.entities) {
@@ -828,7 +896,7 @@ class CombiCard extends LitElement {
 				// the dataset becomes invalid and the graph doesnt load correctly
 				if( chartData.length > 0 ) {
 					chartsDataAlsArray.push(chartData);
-					chartDatasets.push(this.generateDatasetObject(chartData[1], entity))
+					chartDatasets.push(this.generateDatasetObject(chartData[1], entity, chartDatasets.length))
 				}
 			}
 
@@ -1102,7 +1170,7 @@ if (!window.customCards.some(card => card.type === 'neerslag-card')) window.cust
 });
 
 console.info(
-	`%c NEERSLAG-CARD %c 2026.10.30.2`,
+	`%c NEERSLAG-CARD %c 2026.10.30-dev2`,
 	"Color: white; font-weight: bold; background: red;",
 	""
 );
