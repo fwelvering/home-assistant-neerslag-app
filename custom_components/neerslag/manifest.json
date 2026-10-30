@@ -14,5 +14,5 @@
     "@fwelvering"
   ],
   "iot_class" : "cloud_polling",
-  "version": "2026.10.29.2"
+  "version": "2026.10.30.1-dev1"
 }

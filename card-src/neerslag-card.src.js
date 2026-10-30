@@ -12,21 +12,127 @@ Chart.register(...registerables);
 Chart.register(annotationPlugin);
 
 
-// class CombiCardEditor extends LitElement {
+const EDITOR_LABELS = {
+	nl: {
+		title: 'Titel',
+		entities: 'Entiteiten (sensoren)',
+		autozoom: 'Automatisch inzoomen',
+		names: 'Namen in de grafiek (optioneel)',
+	},
+	en: {
+		title: 'Title',
+		entities: 'Entities (sensors)',
+		autozoom: 'Automatic zoom',
+		names: 'Names in the graph (optional)',
+	},
+};
 
-// 	setConfig(config) {
-// 		this._config = config;
-// 	}
+class CombiCardEditor extends LitElement {
 
-// 	configChanged(newConfig) {
-// 		const event = new Event("config-changed", {
-// 		bubbles: true,
-// 		composed: true
-// 		});
-// 		event.detail = {config: newConfig};
-// 		this.dispatchEvent(event);
-// 	}
-// }
+	static get properties() {
+		return {
+			hass: {},
+			_config: {},
+		};
+	}
+
+	setConfig(config) {
+		this._config = config;
+	}
+
+	_lang() {
+		const lang = ((this.hass && this.hass.language) || 'en').substring(0, 2);
+		return EDITOR_LABELS[lang] ? lang : 'en';
+	}
+
+	_entities() {
+		const config = this._config || {};
+		if (Array.isArray(config.entities)) return config.entities;
+		return config.entity ? [config.entity] : [];
+	}
+
+	_schema() {
+		const labels = EDITOR_LABELS[this._lang()];
+		const schema = [
+			{ name: 'title', selector: { text: {} } },
+			{ name: 'entities', selector: { entity: { multiple: true, domain: ['sensor', 'binary_sensor'] } } },
+			{ name: 'autozoom', selector: { boolean: {} } },
+		];
+		const entities = this._entities();
+		if (entities.length) {
+			schema.push({
+				type: 'expandable',
+				name: '',
+				title: labels.names,
+				schema: entities.map(entity => ({ name: 'name_' + entity, label: entity, selector: { text: {} } })),
+			});
+		}
+		return schema;
+	}
+
+	_data() {
+		const config = this._config || {};
+		const data = {
+			title: config.title || '',
+			entities: this._entities(),
+			autozoom: config.autozoom === true,
+		};
+		for (const entity of data.entities) {
+			data['name_' + entity] = (config.names && config.names[entity]) || '';
+		}
+		return data;
+	}
+
+	_valueChanged(ev) {
+		ev.stopPropagation();
+		const value = ev.detail.value;
+		const entities = Array.isArray(value.entities) ? value.entities : [];
+		const config = { ...this._config };
+
+		if (value.title) config.title = value.title; else delete config.title;
+		if (value.autozoom) config.autozoom = true; else delete config.autozoom;
+
+		// a single entity keeps the short "entity:" form of the old configs
+		if (entities.length === 1 && !Array.isArray(this._config.entities)) {
+			config.entity = entities[0];
+			delete config.entities;
+		} else {
+			config.entities = entities;
+			delete config.entity;
+		}
+
+		const names = {};
+		for (const entity of entities) {
+			const name = value['name_' + entity];
+			if (name) names[entity] = name;
+		}
+		if (Object.keys(names).length) config.names = names; else delete config.names;
+
+		this._config = config;
+		this.dispatchEvent(new CustomEvent('config-changed', {
+			detail: { config },
+			bubbles: true,
+			composed: true,
+		}));
+	}
+
+	render() {
+		if (!this.hass || !this._config) {
+			return html``;
+		}
+		const labels = EDITOR_LABELS[this._lang()];
+		return html`
+			<ha-form
+				.hass=${this.hass}
+				.data=${this._data()}
+				.schema=${this._schema()}
+				.computeLabel=${(item) => labels[item.name] || item.label || item.name}
+				@value-changed=${this._valueChanged}
+			></ha-form>
+		`;
+	}
+}
+
 class CombiCard extends LitElement {
 
 	static get properties() {
@@ -44,9 +150,9 @@ class CombiCard extends LitElement {
 		}
 	}
 
-	// static getConfigElement() {
-	// 	return document.createElement("combi-card-editor");
-	// }
+	static getConfigElement() {
+		return document.createElement("neerslag-card-editor");
+	}
 
 	static get styles() {
 		return css`
@@ -974,6 +1080,7 @@ class CombiCard extends LitElement {
 }
 
 // customElements.define("combi-card-editor", CombiCardEditor);
+if (!customElements.get('neerslag-card-editor')) { customElements.define('neerslag-card-editor', CombiCardEditor); }
 if (!customElements.get('neerslag-card')) {
 	customElements.define('neerslag-card', CombiCard);
 } else {
@@ -989,7 +1096,7 @@ if (!window.customCards.some(card => card.type === 'neerslag-card')) window.cust
 });
 
 console.info(
-	`%c NEERSLAG-CARD %c 2026.10.29.2`,
+	`%c NEERSLAG-CARD %c 2026.10.30.1-dev1`,
 	"Color: white; font-weight: bold; background: red;",
 	""
 );
