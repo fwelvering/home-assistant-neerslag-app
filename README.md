@@ -107,3 +107,10 @@ colors:
   sensor.neerslag_buienradar_regen_data: "#2196f3"
   sensor.neerslag_buienalarm_regen_data: "#ff8800"
 ```
+
+
+Set a fixed height (in pixels) for the graph. Without it the graph keeps its aspect ratio and follows the card width.
+
+```yaml
+height: 150
+```

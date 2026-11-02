@@ -48,6 +48,7 @@ const EDITOR_LABELS = {
 		entities: 'Entiteiten (sensoren)',
 		autozoom: 'Automatisch inzoomen',
 		axis_labels: 'Labels op de assen tonen',
+		height: 'Hoogte van de grafiek in px (optioneel)',
 		name: 'Naam in de grafiek (optioneel)',
 		custom_color: 'Eigen kleur gebruiken',
 		color: 'Kleur',
@@ -58,6 +59,7 @@ const EDITOR_LABELS = {
 		entities: 'Entities (sensors)',
 		autozoom: 'Automatic zoom',
 		axis_labels: 'Show axis labels',
+		height: 'Graph height in px (optional)',
 		name: 'Name in the graph (optional)',
 		custom_color: 'Use a custom color',
 		color: 'Color',
@@ -95,6 +97,7 @@ class CombiCardEditor extends LitElement {
 			{ name: 'entities', selector: { entity: { multiple: true, domain: ['sensor', 'binary_sensor'] } } },
 			{ name: 'autozoom', selector: { boolean: {} } },
 			{ name: 'axis_labels', selector: { boolean: {} } },
+			{ name: 'height', selector: { number: { min: 50, max: 1000, step: 10, unit_of_measurement: 'px', mode: 'box' } } },
 		];
 		const config = this._config || {};
 		// one edit area per entity: name and color
@@ -119,6 +122,7 @@ class CombiCardEditor extends LitElement {
 			entities: this._entities(),
 			autozoom: config.autozoom === true,
 			axis_labels: config.axis_labels !== false,
+			height: config.height,
 		};
 		for (const entity of data.entities) {
 			data['name_' + entity] = (config.names && config.names[entity]) || '';
@@ -142,6 +146,8 @@ class CombiCardEditor extends LitElement {
 		if (value.autozoom) config.autozoom = true; else delete config.autozoom;
 		// axis labels are on by default, only store the opt-out
 		if (value.axis_labels === false) config.axis_labels = false; else delete config.axis_labels;
+		// no height means the default (the graph follows the card width)
+		if (Number(value.height) > 0) config.height = Number(value.height); else delete config.height;
 
 		// a single entity keeps the short "entity:" form of the old configs
 		if (entities.length === 1 && !Array.isArray(this._config.entities)) {
@@ -250,6 +256,14 @@ class CombiCard extends LitElement {
 
 		//default zoom waarde
 		this.zoomwaarde = 5.5;
+	}
+
+	/**
+	 * Optional card config `height` (pixels, e.g. 150 or "150px") for the graph; null when not set.
+	 */
+	chartHeight() {
+		const height = parseFloat(this._config && this._config.height);
+		return height > 0 ? Math.round(height) : null;
 	}
 
 	getCardSize() {
@@ -477,7 +491,7 @@ class CombiCard extends LitElement {
 				</h1>
 
 				<div id="plotGraphCard">
-					<div id="neerslagChartContainer" style="display: block;">
+					<div id="neerslagChartContainer" style="display: block;${this.chartHeight() ? ` height: ${this.chartHeight()}px;` : ''}">
 						<canvas id="neerslagChart"></canvas>
 					</div>
 				</div>
@@ -633,6 +647,8 @@ class CombiCard extends LitElement {
 			this.myChart = new Chart(ctx, {
 				type: 'line',
 				options: {
+					// with a fixed height the graph fills it, otherwise it keeps its aspect ratio
+					maintainAspectRatio: !this.chartHeight(),
 					backgroundColor: [
 						primaryColor.replace(' ','')+percentToHex(20)
 					],
@@ -1170,7 +1186,7 @@ if (!window.customCards.some(card => card.type === 'neerslag-card')) window.cust
 });
 
 console.info(
-	`%c NEERSLAG-CARD %c 2026.10.30.3`,
+	`%c NEERSLAG-CARD %c 2026.11.02-dev1`,
 	"Color: white; font-weight: bold; background: red;",
 	""
 );
