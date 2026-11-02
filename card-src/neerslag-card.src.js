@@ -1186,7 +1186,7 @@ if (!window.customCards.some(card => card.type === 'neerslag-card')) window.cust
 });
 
 console.info(
-	`%c NEERSLAG-CARD %c 2026.11.02-dev1`,
+	`%c NEERSLAG-CARD %c 2026.11.2-dev1`,
 	"Color: white; font-weight: bold; background: red;",
 	""
 );
