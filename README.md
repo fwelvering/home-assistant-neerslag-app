@@ -84,25 +84,32 @@ entities:
   ```
 > Note: If Home Assistant has not yet received data from the sensors, the card can remain blank.
 
-### Advanced configuration options:
-Enable auto zoom to have the graph dynamically zoom in or out depending on the amount of rainfall. 
+### Card Options
+All options can also be set in the visual editor of the card.
 
-Note: By default auto zoom is disabled. Which gives the graph a fixed starting position displaying low, medium and heavy rainfall. Auto zoom will continue on extreme rainfall. Before version 2022.07.07.1 this setting was set to true.
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `entity` | string | **yes**, unless `entities` is set | - | Entity ID of a single sensor (e.g. `sensor.neerslag_buienalarm_regen_data`) |
+| `entities` | list of strings | **yes**, unless `entity` is set | - | Entity IDs of one or more sensors. Sensors of this app, Buienradar, Buienalarm, [NL Weather](https://github.com/PaulVanSchayck/ha-nl-weather) and KNMI are supported. |
+| `title` | string | no | `null` | Title displayed at the top of the card |
+| `autozoom` | boolean | no | `false` | Zoom the graph in or out depending on the amount of rainfall. When `false` the graph has a fixed starting position displaying low, medium and heavy rainfall; it still zooms on extreme rainfall. Before version 2022.07.07.1 this was `true`. |
+| `axis_labels` | boolean | no | `true` | Show the axis labels ("Rain (mm / hr)" and "Rainfall forecast"). Set to `false` to give the graph more room. |
+| `height` | number | no | - | Fixed height of the graph in pixels (e.g. `150`). When unset, the graph keeps its aspect ratio and follows the card width. |
+| `names` | object | no | - | Names shown in the graph, as `entity_id: name`. When unset, the name of the data source is used (e.g. Buienradar). |
+| `colors` | object | no | - | Graph colors, as `entity_id: color` (any CSS color, e.g. `"#ff8800"`). When unset, the first entity uses the theme color and every other entity gets its own color. |
 
+### Example
 ```yaml
-autozoom: false
-```
-
-Hide the axis labels ("Rain (mm / hr)" and "Rainfall forecast") to give the graph more room. By default the labels are shown.
-
-```yaml
+type: 'custom:neerslag-card'
+title: Neerslag
+entities:
+  - sensor.neerslag_buienalarm_regen_data
+  - sensor.neerslag_buienradar_regen_data
+autozoom: true
 axis_labels: false
-```
-
-
-Every entity after the first gets its own graph color; set your own with `colors` (any CSS color, e.g. `#ff8800`). The first entity keeps the theme color unless you set one.
-
-```yaml
+height: 150
+names:
+  sensor.neerslag_buienalarm_regen_data: Buienalarm
 colors:
   sensor.neerslag_buienradar_regen_data: "#2196f3"
   sensor.neerslag_buienalarm_regen_data: "#ff8800"
