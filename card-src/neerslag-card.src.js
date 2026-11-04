@@ -1012,9 +1012,12 @@ class CombiCard extends LitElement {
 		const addZero = (i) => (i < 10 ? "0" + i : i);
 		let tijd = [];
 		let rain = [];
+		// the forecast may start in the past (KNMI starts ~2 hours back), start the graph at the current time
+		const earliest = Date.now() - 5 * 60 * 1000;
 		for (const item of data) {
 			if (item && item.datetime && typeof item.precipitation !== 'undefined') {
 				const d = new Date(item.datetime);
+				if (d.getTime() < earliest) continue;
 				tijd.push(addZero(d.getHours()) + ":" + addZero(d.getMinutes()));
 				rain.push(parseFloat(item.precipitation));
 			}
@@ -1186,7 +1189,7 @@ if (!window.customCards.some(card => card.type === 'neerslag-card')) window.cust
 });
 
 console.info(
-	`%c NEERSLAG-CARD %c 2026.11.02.1`,
+	`%c NEERSLAG-CARD %c 2026.11.4-dev1`,
 	"Color: white; font-weight: bold; background: red;",
 	""
 );
